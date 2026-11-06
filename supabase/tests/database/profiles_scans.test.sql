@@ -2,7 +2,7 @@
 -- Checks the sign-up trigger, Row Level Security on profiles and scans, and the phone-change cleanup job.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(17);
 
 -- Two users. The trigger should give each a profile.
 insert into auth.users (id, phone, aud, role) values
@@ -10,7 +10,7 @@ insert into auth.users (id, phone, aud, role) values
   ('22222222-2222-2222-2222-222222222222', '15550000002', 'authenticated', 'authenticated');
 
 select is((select count(*)::int from public.profiles where id in ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222')), 2, 'sign-up creates a profile');
-select is((select strict_mode from public.profiles where id = '11111111-1111-1111-1111-111111111111'), false, 'strict_mode defaults to false');
+select is((select strict_mode from public.profiles where id = '11111111-1111-1111-1111-111111111111'), true, 'strict_mode defaults to true (today''s rules)');
 select is((select haptics from public.profiles where id = '11111111-1111-1111-1111-111111111111'), true, 'haptics defaults to true');
 
 -- Scans are written by the server (service role); here as the table owner.
@@ -36,6 +36,7 @@ select is((select display_name from public.profiles), 'Sam', 'user can update th
 update public.profiles set display_name = 'Hacked' where id = '22222222-2222-2222-2222-222222222222';
 select throws_ok($$ update public.profiles set created_at = now() $$, '42501', null, 'user cannot change created_at');
 select throws_ok($$ update public.profiles set id = '22222222-2222-2222-2222-222222222222' $$, '42501', null, 'user cannot change their id');
+select throws_ok($$ update public.profiles set scans_imported_at = null $$, '42501', null, 'user cannot reset the import marker');
 
 select throws_ok(
   $$ insert into public.scans (user_id, verdict) values ('11111111-1111-1111-1111-111111111111', 'clean') $$,

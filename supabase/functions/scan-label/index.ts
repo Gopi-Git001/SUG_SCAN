@@ -111,7 +111,8 @@ export default {
     // A failed save is logged but doesn't cost the user their result.
     const userId = ctx.userClaims?.id;
     if (userId) {
-      const productName = typeof reading.product_name === 'string' ? reading.product_name.trim().slice(0, 120) || null : null;
+      // Display-only: never passed to the rules, so it can't affect the verdict.
+      const productName = typeof reading.product_name === 'string' ? reading.product_name.trim().slice(0, 60) || null : null;
       const { error } = await ctx.supabaseAdmin.from('scans').insert({
         user_id: userId,
         product_name: productName,

@@ -5,9 +5,11 @@
 create table public.profiles (
   id uuid primary key references auth.users on delete cascade,
   display_name text check (char_length(display_name) <= 40),
-  strict_mode boolean not null default false,
+  strict_mode boolean not null default true, -- on = today's rules: stevia and monk fruit count as OKAY at best
   gentle_mode boolean not null default false,
   haptics boolean not null default true,
+  -- Set once by the import-scans function when on-device history has been uploaded.
+  scans_imported_at timestamptz,
   created_at timestamptz not null default now()
 );
 
