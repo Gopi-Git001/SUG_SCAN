@@ -15,10 +15,13 @@ export type Mood = keyof typeof animations;
 
 export const moodForVerdict: Record<Verdict, Mood> = { CLEAN: 'happy', OKAY: 'okay', BAD: 'sad' };
 
+/** Width and height of the character for a given screen width. */
+export const characterSize = (screenWidth: number) => Math.min(screenWidth * 0.5, 230);
+
 /** The sugar-cube character, standing in the bottom-left corner above `bottom`. */
 export function Character({ mood, bottom }: { mood: Mood; bottom: number }) {
   const { width } = useWindowDimensions();
-  const size = Math.min(width * 0.5, 230);
+  const size = characterSize(width);
   return (
     <LottieView
       key={mood}

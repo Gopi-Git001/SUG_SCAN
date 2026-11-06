@@ -1,8 +1,8 @@
 import { BlurTargetView, BlurView } from 'expo-blur';
-import { type ComponentRef, type RefObject, useRef } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { type ComponentRef, type RefObject, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Character, moodForVerdict } from '../components/Character';
+import { Character, characterSize, moodForVerdict } from '../components/Character';
 import { Footer, Header, MenuButton, Scrims } from '../components/Chrome';
 import { CameraIcon } from '../components/Icons';
 import { VerdictPanel, verdictColor } from '../components/VerdictPanel';
@@ -11,6 +11,9 @@ import type { ScanResult } from '../types';
 
 const BUTTON_HEIGHT = 66;
 const FOOTER_HEIGHT = 46;
+const PANEL_BELOW_HEADER = 16; // gap between the header tagline and the verdict panel
+const PANEL_ABOVE_CHARACTER = 24; // the panel never comes closer than this to the character
+const PANEL_ABOVE_BUTTON = 12; // the expanded list stops this far above "Scan another"
 
 export type ScanState =
   | { status: 'reading' }
@@ -23,7 +26,11 @@ type Props = { photoUri: string; state: ScanState; onScanAnother: () => void; ta
 export function ResultScreen({ photoUri, state, onScanAnother, tagline }: Props) {
   const insets = useSafeAreaInsets();
   const blurTarget = useRef<ComponentRef<typeof View>>(null);
+  const window = useWindowDimensions();
+  const [headerBottom, setHeaderBottom] = useState(insets.top + 54);
   const bottomBar = insets.bottom + FOOTER_HEIGHT + BUTTON_HEIGHT;
+  const panelTop = headerBottom + PANEL_BELOW_HEADER;
+  const characterTop = window.height - bottomBar - characterSize(window.width);
   const buttonColor = state.status === 'done' ? verdictColor[state.result.verdict] : '#FFFFFF';
   const buttonInk = state.status === 'done' && state.result.verdict === 'BAD' ? '#FFFFFF' : colors.background;
 
@@ -35,7 +42,9 @@ export function ResultScreen({ photoUri, state, onScanAnother, tagline }: Props)
       <Scrims />
 
       <SafeAreaView style={styles.fill} edges={['top', 'bottom']}>
-        <Header tagline={tagline} right={<MenuButton />} />
+        <View onLayout={(e) => setHeaderBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}>
+          <Header tagline={tagline} right={<MenuButton />} />
+        </View>
         <View style={styles.fill} />
         {state.status !== 'reading' && (
           <View>
@@ -55,8 +64,12 @@ export function ResultScreen({ photoUri, state, onScanAnother, tagline }: Props)
 
       {state.status === 'done' && (
         <>
-          <View style={[styles.panelSlot, { top: insets.top + 64 }]} pointerEvents="box-none">
-            <VerdictPanel result={state.result} blurTarget={blurTarget} />
+          <View style={[styles.panelSlot, { top: panelTop }]} pointerEvents="box-none">
+            <VerdictPanel
+              result={state.result}
+              maxHeight={characterTop - PANEL_ABOVE_CHARACTER - panelTop}
+              expandedMaxHeight={window.height - bottomBar - PANEL_ABOVE_BUTTON - panelTop}
+            />
           </View>
           <Character mood={moodForVerdict[state.result.verdict]} bottom={bottomBar} />
         </>
