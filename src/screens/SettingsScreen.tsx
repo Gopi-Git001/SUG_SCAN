@@ -101,11 +101,11 @@ function SettingsList({ phone, open, onAccountGone }: { phone?: string; open: (p
         <Row icon={BookOpen} label="How verdicts work" onPress={() => open('methodology')} chevron />
         <Row icon={Lock} label="Privacy policy" onPress={() => openLink(links.privacy)} chevron />
         <Row icon={FileText} label="Terms of use" onPress={() => openLink(links.terms)} chevron />
-        <Row icon={Mail} label="Contact support" onPress={() => openLink(`mailto:${links.supportEmail}?subject=QuickGAB%20support`)} chevron />
-        <Row icon={Star} label="Rate QuickGAB" onPress={() => openLink(Platform.OS === 'ios' ? links.appStore : links.playStore)} chevron />
+        <Row icon={Mail} label="Contact support" onPress={() => openLink(`mailto:${links.supportEmail}?subject=QuickGOB%20support`)} chevron />
+        <Row icon={Star} label="Rate QuickGOB" onPress={() => openLink(Platform.OS === 'ios' ? links.appStore : links.playStore)} chevron />
       </Group>
 
-      <Text style={styles.version}>QuickGAB {Constants.expoConfig?.version ?? ''}</Text>
+      <Text style={styles.version}>QuickGOB {Constants.expoConfig?.version ?? ''}</Text>
     </ScrollView>
   );
 }
@@ -176,7 +176,7 @@ function confirmDelete(done: () => void) {
   if (!isConfigured) return demoAlert();
   Alert.alert(
     'Delete account?',
-    'This permanently deletes your QuickGAB account and your scan history. It cannot be undone.',
+    'This permanently deletes your QuickGOB account and your scan history. It cannot be undone.',
     [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -257,7 +257,7 @@ function Methodology() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.paragraph}>
-        QuickGAB reads the ingredient list and the nutrition panel from your photo. Fixed rules then decide the verdict, so the same label
+        QuickGOB reads the ingredient list and the nutrition panel from your photo. Fixed rules then decide the verdict, so the same label
         always gets the same answer.
       </Text>
       {rules.map((r) => (
@@ -269,13 +269,13 @@ function Methodology() {
         </View>
       ))}
       <Text style={styles.paragraph}>
-        If the label doesn't show how many grams of added sugar there are, any added sugar counts as OKAY and QuickGAB asks you to scan the
+        If the label doesn't show how many grams of added sugar there are, any added sugar counts as OKAY and QuickGOB asks you to scan the
         nutrition panel.
       </Text>
       <Text style={styles.paragraph}>
         With Strict mode off, a product whose only sweetener is stevia, monk fruit or a similar plant sweetener shows as CLEAN.
       </Text>
-      <Text style={styles.muted}>Not medical advice. QuickGAB doesn't check allergens.</Text>
+      <Text style={styles.muted}>Not medical advice. QuickGOB doesn't check allergens.</Text>
     </ScrollView>
   );
 }

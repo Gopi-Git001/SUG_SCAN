@@ -27,7 +27,7 @@ export function Header({ right, tagline = 'Scan. Know. Choose better.' }: { righ
   return (
     <View style={styles.header}>
       <View>
-        <Text style={styles.brand}>QuickGAB</Text>
+        <Text style={styles.brand}>QuickGOB</Text>
         <Text style={styles.tagline}>{tagline}</Text>
       </View>
       <View style={styles.actions}>{right}</View>
