@@ -1,0 +1,46 @@
+// Pure helpers for what the app shows. No React Native imports, so they run under Node tests.
+import type { ScanResult } from '../types';
+
+// Plant-based sweeteners. Same list as OTHER_SWEETENERS in supabase/functions/_shared/rules.ts; keep in sync.
+const PLANT_SWEETENERS = ['stevia', 'steviol', 'rebaudioside', 'monk fruit', 'luo han guo', 'mogroside', 'allulose', 'thaumatin', 'e960'];
+
+const isPlantSweetener = (item: string) => PLANT_SWEETENERS.some((w) => item.toLowerCase().includes(w));
+
+/**
+ * The server rates plant sweeteners (stevia, monk fruit…) as OKAY. That is strict mode.
+ * With strict mode off, a product whose only issue is plant sweeteners is shown as CLEAN.
+ */
+export function applyStrictMode(result: ScanResult, strict: boolean): ScanResult {
+  const onlyPlantSweeteners =
+    result.verdict === 'OKAY' &&
+    result.addedSugars.length === 0 &&
+    result.sweeteners.length > 0 &&
+    result.sweeteners.every(isPlantSweetener);
+  return strict || !onlyPlantSweeteners ? result : { ...result, verdict: 'CLEAN' };
+}
+
+/** "+1 •••• 4821" from Supabase's "14155554821" (digits only, country code first). */
+export function maskPhone(phone: string | undefined) {
+  const digits = (phone ?? '').replace(/\D/g, '');
+  if (digits.length < 8) return 'Not available';
+  const country = digits.length > 10 ? digits.slice(0, digits.length - 10) : '';
+  return `${country ? `+${country} ` : ''}•••• ${digits.slice(-4)}`;
+}
+
+export const HISTORY_LIMIT = 50;
+
+export type HistoryEntry = { id: string; date: string; result: ScanResult };
+
+/** Newest first, at most 50. Stores the server's result, so the strict-mode setting applies when shown. */
+export function addToHistory(history: HistoryEntry[], result: ScanResult, now: Date): HistoryEntry[] {
+  const entry = { id: `${now.getTime()}-${history.length}`, date: now.toISOString(), result };
+  return [entry, ...history].slice(0, HISTORY_LIMIT);
+}
+
+/** The first few ingredient names found, for a one-line summary. */
+export function ingredientSummary(result: ScanResult, max = 3) {
+  const names = [...result.addedSugars, ...result.sweeteners, ...result.naturalSugars];
+  if (names.length === 0) return 'No sugars or sweeteners found';
+  const shown = names.slice(0, max).join(', ');
+  return names.length > max ? `${shown} +${names.length - max}` : shown;
+}
