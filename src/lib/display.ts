@@ -44,3 +44,15 @@ export function ingredientSummary(result: ScanResult, max = 3) {
   const shown = names.slice(0, max).join(', ');
   return names.length > max ? `${shown} +${names.length - max}` : shown;
 }
+
+/**
+ * Ingredient names for the result panel: drops amounts and hints that aren't names (anything with a digit,
+ * a standalone "g", "per serving", or over 40 characters) and repeats (ignoring case; the first spelling wins).
+ */
+export function ingredientNames(items: string[]) {
+  const seen = new Set<string>();
+  return items
+    .map((item) => item.trim())
+    .filter((item) => item && !/\d/.test(item) && !/\bg\b/i.test(item) && !/per serving/i.test(item) && item.length <= 40)
+    .filter((item) => !seen.has(item.toLowerCase()) && Boolean(seen.add(item.toLowerCase())));
+}

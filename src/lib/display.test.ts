@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ScanResult } from '../types.ts';
-import { addToHistory, applyStrictMode, HISTORY_LIMIT, ingredientSummary, maskPhone } from './display.ts';
+import { addToHistory, applyStrictMode, HISTORY_LIMIT, ingredientNames, ingredientSummary, maskPhone } from './display.ts';
 
 const result = (over: Partial<ScanResult>): ScanResult => ({
   verdict: 'OKAY',
@@ -46,4 +46,11 @@ test('history keeps the newest 50 scans, newest first', () => {
 test('ingredientSummary lists the first three names', () => {
   assert.equal(ingredientSummary(result({ addedSugars: ['Sugar', 'Corn syrup'], sweeteners: ['Sucralose', 'Stevia'] })), 'Sugar, Corn syrup, Sucralose +1');
   assert.equal(ingredientSummary(result({})), 'No sugars or sweeteners found');
+});
+
+test('ingredientNames drops amounts, hints, long text and repeats', () => {
+  assert.deepEqual(
+    ingredientNames([' Cane sugar ', '41 g added per serving', 'Sugar 5g', 'Added per serving', 'cane SUGAR', 'Icing sugar', 'x'.repeat(41), '', 'Dextrose']),
+    ['Cane sugar', 'Icing sugar', 'Dextrose'],
+  );
 });
