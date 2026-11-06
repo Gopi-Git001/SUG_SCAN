@@ -6,6 +6,9 @@
 //
 // These rules always decide the verdict; no model output can override them.
 
+/** Saved with each scan. Bump it whenever the rules below change. */
+export const RULES_VERSION = '1';
+
 export type Verdict = 'CLEAN' | 'OKAY' | 'BAD';
 
 /** What Claude reads off the label (see LABEL_SCHEMA in scan-label). */

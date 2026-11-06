@@ -1,9 +1,10 @@
 // POST { image: <base64 JPEG> }  →  { result: ScanResult, jev: JevCheck } | { error: string }
 // Signed-in users only. Claude vision reads the label → the sugar rules decide → Jev confirms.
+// Each successful result is saved to the user's scan history (public.scans). Photos are never stored.
 import Anthropic from 'npm:@anthropic-ai/sdk@1.4.0';
 import { withSupabase } from 'npm:@supabase/server@1.9.2';
 import { askJev } from '../_shared/jev.ts';
-import { decide, type LabelReading, normalise } from '../_shared/rules.ts';
+import { decide, type LabelReading, normalise, RULES_VERSION } from '../_shared/rules.ts';
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') });
 
@@ -15,11 +16,12 @@ const LABEL_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   required: [
-    'is_food_label', 'natural_sugars', 'added_sugars', 'artificial_sweeteners',
+    'is_food_label', 'product_name', 'natural_sugars', 'added_sugars', 'artificial_sweeteners',
     'sugar_alcohols', 'other_sweeteners', 'contains_alcohol', 'added_sugar_grams',
   ],
   properties: {
     is_food_label: { type: 'boolean' },
+    product_name: { anyOf: [{ type: 'string' }, { type: 'null' }] },
     natural_sugars: list,
     added_sugars: list,
     artificial_sweeteners: list,
@@ -39,6 +41,7 @@ Find the ingredient list (and the nutrition panel if it is visible) and sort eve
 - sugar_alcohols: erythritol, xylitol, sorbitol, maltitol, mannitol, isomalt, lactitol. Never list these as added sugars.
 - other_sweeteners: stevia / steviol glycosides, monk fruit, allulose, thaumatin.
 - contains_alcohol: true only if the product contains drinking alcohol (beer, wine, spirits, or an ABV is shown).
+- product_name: the product's name as printed (brand and product, e.g. "Chobani Greek Yogurt"), or null if no name is visible.
 - added_sugar_grams: grams of ADDED sugar per serving, e.g. from "Includes 6g Added Sugars". Use null if it is not shown. Do not guess from total sugars.
 
 Use the ingredient names as printed, in title case, without percentages.
@@ -47,7 +50,7 @@ Only report what you can actually read. If the photo is not a food or drink labe
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 
 export default {
-  fetch: withSupabase({ auth: 'user' }, async (req) => {
+  fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
     if (req.method !== 'POST') return json({ error: 'Use POST' }, 405);
 
     let image: unknown;
@@ -60,7 +63,7 @@ export default {
       return json({ error: 'Send a JPEG photo as base64 in "image"' }, 400);
     }
 
-    let reading: LabelReading;
+    let reading: LabelReading & { product_name: string | null };
     try {
       const response = await anthropic.beta.messages.create({
         model: 'claude-opus-5-5',
@@ -102,6 +105,23 @@ export default {
       console.warn('jev disagrees', { rules: result.verdict, jev: jev.jevVerdict, confidence: jev.confidence, model: jev.model, reading });
     } else if (jev.status === 'unavailable') {
       console.warn('jev unavailable', jev.reason);
+    }
+
+    // Save to the user's history. The user id comes only from their verified token.
+    // A failed save is logged but doesn't cost the user their result.
+    const userId = ctx.userClaims?.id;
+    if (userId) {
+      const productName = typeof reading.product_name === 'string' ? reading.product_name.trim().slice(0, 120) || null : null;
+      const { error } = await ctx.supabaseAdmin.from('scans').insert({
+        user_id: userId,
+        product_name: productName,
+        verdict: result.verdict.toLowerCase(),
+        natural_sugars: result.naturalSugars,
+        added_sugars: result.addedSugars,
+        sweeteners: result.sweeteners,
+        rules_version: RULES_VERSION,
+      });
+      if (error) console.error('saving scan failed', error);
     }
 
     return json({ result, jev });
