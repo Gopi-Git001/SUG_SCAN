@@ -56,3 +56,12 @@ export function ingredientNames(items: string[]) {
     .filter((item) => item && !/\d/.test(item) && !/\bg\b/i.test(item) && !/per serving/i.test(item) && item.length <= 40)
     .filter((item) => !seen.has(item.toLowerCase()) && Boolean(seen.add(item.toLowerCase())));
 }
+
+/** "Sam Lee" → "SL", "sam" → "S"; empty when there's no name (show a person icon instead). */
+export function initials(name: string | null | undefined) {
+  const words = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  return words.slice(0, 2).map((w) => [...w][0].toUpperCase()).join('');
+}
+
+/** Whole-number percentage of `part` in `total` (0 when there are no scans). */
+export const percent = (part: number, total: number) => (total > 0 ? Math.round((part / total) * 100) : 0);

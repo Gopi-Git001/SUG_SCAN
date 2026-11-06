@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ScanResult } from '../types.ts';
-import { addToHistory, applyStrictMode, HISTORY_LIMIT, ingredientNames, ingredientSummary, maskPhone } from './display.ts';
+import { addToHistory, applyStrictMode, HISTORY_LIMIT, ingredientNames, ingredientSummary, initials, maskPhone, percent } from './display.ts';
 
 const result = (over: Partial<ScanResult>): ScanResult => ({
   verdict: 'OKAY',
@@ -53,4 +53,18 @@ test('ingredientNames drops amounts, hints, long text and repeats', () => {
     ingredientNames([' Cane sugar ', '41 g added per serving', 'Sugar 5g', 'Added per serving', 'cane SUGAR', 'Icing sugar', 'x'.repeat(41), '', 'Dextrose']),
     ['Cane sugar', 'Icing sugar', 'Dextrose'],
   );
+});
+
+test('initials from the display name', () => {
+  assert.equal(initials('Sam Lee'), 'SL');
+  assert.equal(initials('  sam  '), 'S');
+  assert.equal(initials('Ana María de la Cruz'), 'AM');
+  assert.equal(initials(''), '');
+  assert.equal(initials(null), '');
+});
+
+test('percent rounds and handles no scans', () => {
+  assert.equal(percent(1, 3), 33);
+  assert.equal(percent(2, 3), 67);
+  assert.equal(percent(0, 0), 0);
 });

@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 
 /**
  * A value kept on the device (AsyncStorage) that any component can read with `use()`.
- * Starts as `initial`, then switches to the saved value once it has loaded.
+ * Starts as `initial`, then switches to the saved value once it has loaded (`loaded` resolves then).
  */
 export function stored<T>(key: string, initial: T, parse: (saved: unknown) => T) {
   let value = initial;
@@ -11,7 +11,7 @@ export function stored<T>(key: string, initial: T, parse: (saved: unknown) => T)
   const listeners = new Set<() => void>();
   const emit = () => listeners.forEach((l) => l());
 
-  AsyncStorage.getItem(key)
+  const loaded: Promise<void> = AsyncStorage.getItem(key)
     .then((raw) => {
       if (raw === null || changedBeforeLoad) return;
       value = parse(JSON.parse(raw));
@@ -34,5 +34,5 @@ export function stored<T>(key: string, initial: T, parse: (saved: unknown) => T)
   };
   const use = () => useSyncExternalStore(subscribe, get);
 
-  return { get, set, use };
+  return { get, set, use, loaded };
 }

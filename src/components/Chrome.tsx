@@ -3,23 +3,36 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Menu, User } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { type DimensionValue, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useProfile } from '../lib/account';
+import { initials } from '../lib/display';
 import { colors, fonts } from '../theme';
 
-/** Top-right pill (person + ☰) that opens Settings. */
-export function ProfileButton({ onPress }: { onPress: () => void }) {
+export type Sheet = 'profile' | 'menu';
+
+/** Top-right pill: the avatar opens Profile, ☰ opens the Menu. Shows the user's initials when they have a name. */
+export function ProfileButton({ onOpen }: { onOpen: (sheet: Sheet) => void }) {
+  const letters = initials(useProfile().displayName);
   return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={6}
-      accessibilityRole="button"
-      accessibilityLabel="Open settings"
-      style={({ pressed }) => [styles.profile, pressed && styles.pressed]}
-    >
-      <View style={styles.avatar}>
-        <User size={16} color={colors.cardText} strokeWidth={2.25} />
-      </View>
-      <Menu size={20} color={colors.cardText} strokeWidth={2.25} />
-    </Pressable>
+    <View style={styles.profile}>
+      <Pressable
+        onPress={() => onOpen('profile')}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 2 }}
+        accessibilityRole="button"
+        accessibilityLabel="Profile"
+        style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}
+      >
+        {letters ? <Text style={styles.avatarText}>{letters}</Text> : <User size={16} color={colors.cardText} strokeWidth={2.25} />}
+      </Pressable>
+      <Pressable
+        onPress={() => onOpen('menu')}
+        hitSlop={{ top: 6, bottom: 6, left: 2, right: 6 }}
+        accessibilityRole="button"
+        accessibilityLabel="Menu"
+        style={({ pressed }) => [styles.menu, pressed && styles.pressed]}
+      >
+        <Menu size={20} color={colors.cardText} strokeWidth={2.25} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -77,10 +90,10 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     paddingLeft: 6,
-    paddingRight: 12,
+    paddingRight: 4,
   },
+  menu: { height: 38, paddingLeft: 8, paddingRight: 8, justifyContent: 'center' },
   avatar: {
     width: 28,
     height: 28,
@@ -89,7 +102,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pressed: { opacity: 0.8 },
+  avatarText: { fontFamily: fonts.bold, fontSize: 12, color: colors.cardText },
+  pressed: { opacity: 0.7 },
   footer: {
     fontFamily: fonts.regular,
     fontSize: 13,

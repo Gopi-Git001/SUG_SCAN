@@ -3,7 +3,7 @@ import { type ComponentRef, type RefObject, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Character, characterSize, type Mood, moodForVerdict } from '../components/Character';
-import { Footer, Header, ProfileButton, Scrims } from '../components/Chrome';
+import { Footer, Header, ProfileButton, Scrims, type Sheet } from '../components/Chrome';
 import { CameraIcon } from '../components/Icons';
 import { VerdictPanel, verdictColor } from '../components/VerdictPanel';
 import { colors, fonts } from '../theme';
@@ -22,14 +22,14 @@ type Props = {
   photoUri: string;
   state: ScanState;
   onScanAnother: () => void;
-  onOpenSettings: () => void;
+  onOpenSheet: (sheet: Sheet) => void;
   /** Gentle mode: for BAD, the character shows its calm reaction instead of crying. */
   gentle?: boolean;
   tagline?: string;
 };
 
 /** The captured photo frozen full screen, with the verdict panel and character on top. */
-export function ResultScreen({ photoUri, state, onScanAnother, onOpenSettings, gentle, tagline }: Props) {
+export function ResultScreen({ photoUri, state, onScanAnother, onOpenSheet, gentle, tagline }: Props) {
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const [headerBottom, setHeaderBottom] = useState(insets.top + 56);
@@ -50,7 +50,7 @@ export function ResultScreen({ photoUri, state, onScanAnother, onOpenSettings, g
 
       <SafeAreaView style={styles.fill} edges={['top', 'bottom']}>
         <View onLayout={(e) => setHeaderBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}>
-          <Header tagline={tagline} right={<ProfileButton onPress={onOpenSettings} />} />
+          <Header tagline={tagline} right={<ProfileButton onOpen={onOpenSheet} />} />
         </View>
         <View style={styles.fill} />
         {state.status !== 'reading' && (

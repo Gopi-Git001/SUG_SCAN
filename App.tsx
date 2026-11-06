@@ -10,7 +10,7 @@ import type { Session } from '@supabase/supabase-js';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { scanLabel } from './src/lib/api';
 import { applyStrictMode } from './src/lib/display';
@@ -20,7 +20,10 @@ import { isConfigured, supabase } from './src/lib/supabase';
 import { placeholderResults } from './src/placeholderResults';
 import { CameraScreen } from './src/screens/CameraScreen';
 import { ResultScreen, type ScanState } from './src/screens/ResultScreen';
-import { SettingsScreen } from './src/screens/SettingsScreen';
+import type { Sheet } from './src/components/Chrome';
+import { syncProfile } from './src/lib/account';
+import { MenuScreen } from './src/screens/MenuScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SignInScreen } from './src/screens/SignInScreen';
 import { colors } from './src/theme';
 import type { ScanResult, Verdict } from './src/types';
@@ -46,7 +49,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(isConfigured ? undefined : null);
   const [scan, setScan] = useState<Scan | null>(null);
   const scanId = useRef(0);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sheet, setSheet] = useState<Sheet | null>(null);
   const prefs = usePrefs();
 
   useEffect(() => {
@@ -60,9 +63,15 @@ export default function App() {
   useEffect(() => {
     if (session === null && isConfigured) {
       setScan(null);
-      setSettingsOpen(false);
+      setSheet(null);
     }
   }, [session]);
+
+  // Signed in: load the name and settings from the profile (unsynced local changes are sent first).
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (userId) syncProfile();
+  }, [userId]);
 
   const handleCapture = async (photoUri: string) => {
     const id = ++scanId.current;
@@ -90,7 +99,9 @@ export default function App() {
   };
 
   const tagline = isConfigured ? undefined : DEMO_TAGLINE;
-  const openSettings = () => setSettingsOpen(true);
+  const closeSheet = () => setSheet(null);
+  // Phase 3 adds the change-phone flow; until then the row explains it's coming.
+  const changePhone = () => Alert.alert('Change phone number', 'Changing your number is coming in the next update.');
   // Strict mode is applied on the device to the verdict shown; the server result is kept as is.
   const shownState: ScanState | undefined =
     scan?.state.status === 'done' ? { ...scan.state, result: applyStrictMode(scan.state.result, prefs.strict) } : scan?.state;
@@ -108,14 +119,19 @@ export default function App() {
               photoUri={scan.photoUri}
               state={shownState ?? scan.state}
               onScanAnother={handleScanAnother}
-              onOpenSettings={openSettings}
+              onOpenSheet={setSheet}
               gentle={prefs.gentle}
               tagline={tagline}
             />
           ) : (
-            <CameraScreen onCapture={handleCapture} onOpenSettings={openSettings} tagline={tagline} />
+            <CameraScreen onCapture={handleCapture} onOpenSheet={setSheet} tagline={tagline} />
           ))}
-        {ready && <SettingsScreen visible={settingsOpen} onClose={() => setSettingsOpen(false)} phone={session?.user.phone} />}
+        {ready && (
+          <>
+            <ProfileScreen visible={sheet === 'profile'} onClose={closeSheet} phone={session?.user.phone} onChangePhone={changePhone} />
+            <MenuScreen visible={sheet === 'menu'} onClose={closeSheet} />
+          </>
+        )}
       </View>
     </SafeAreaProvider>
   );

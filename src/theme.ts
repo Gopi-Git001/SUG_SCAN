@@ -14,6 +14,8 @@ export const colors = {
   cardBorder: 'rgba(255,255,255,0.08)',
   cardText: '#F4F4F5',
   cardTextMuted: 'rgba(244,244,245,0.7)',
+  // Opaque cards on the dark list screens (Profile, Menu).
+  surface: '#16161C',
 };
 
 export const fonts = {
